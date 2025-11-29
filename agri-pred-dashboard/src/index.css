@@ -1,0 +1,161 @@
+/* General Layout */
+body {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  background-color: #f0f4f1;
+  margin: 0;
+}
+
+.app-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-height: 100vh;
+}
+
+.navbar {
+  background: #2e7d32; /* Agri Green */
+  color: white;
+  width: 100%;
+  padding: 1rem;
+  text-align: center;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+}
+
+.main-content {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2rem;
+  padding: 2rem;
+  width: 100%;
+  max-width: 1200px;
+  justify-content: center;
+}
+
+/* Cards */
+.card {
+  background: white;
+  padding: 2rem;
+  border-radius: 12px;
+  box-shadow: 0 8px 20px rgba(0,0,0,0.05);
+  flex: 1;
+  min-width: 350px;
+}
+
+/* Form Grid */
+.grid-container {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 15px;
+}
+
+label {
+  display: flex;
+  flex-direction: column;
+  font-weight: 600;
+  color: #555;
+  font-size: 0.9rem;
+}
+
+input {
+  padding: 10px;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  margin-top: 5px;
+  font-size: 1rem;
+}
+
+/* Button */
+.analyze-btn {
+  background: #2e7d32;
+  color: white;
+  border: none;
+  padding: 15px;
+  width: 100%;
+  margin-top: 20px;
+  font-size: 1.1rem;
+  font-weight: bold;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.3s;
+}
+
+.analyze-btn:hover {
+  background: #1b5e20;
+}
+
+.analyze-btn:disabled {
+  background: #ccc;
+  cursor: not-allowed;
+}
+
+/* Results Styling */
+.highlight-box {
+  background: #e8f5e9;
+  padding: 15px;
+  border-radius: 8px;
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+.highlight-box .value {
+  display: block;
+  font-size: 2rem;
+  font-weight: bold;
+  color: #2e7d32;
+}
+
+.financial-breakdown {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 20px;
+}
+
+.money-item {
+  text-align: center;
+  background: #fafafa;
+  padding: 10px;
+  border-radius: 8px;
+  width: 45%;
+}
+
+.money-item span {
+  display: block;
+  font-size: 0.8rem;
+  color: #777;
+}
+
+.money-item strong {
+  font-size: 1.2rem;
+  color: #333;
+}
+
+/* Profit Box Logic */
+.profit-box {
+  text-align: center;
+  padding: 20px;
+  border-radius: 10px;
+  color: white;
+}
+
+.profit-box.profit {
+  background: linear-gradient(135deg, #43a047, #2e7d32);
+}
+
+.profit-box.loss {
+  background: linear-gradient(135deg, #e53935, #c62828);
+}
+
+.profit-box h1 {
+  margin: 10px 0;
+  font-size: 2.5rem;
+}
+
+/* Animation */
+.fade-in {
+  animation: fadeIn 0.5s ease-in;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
