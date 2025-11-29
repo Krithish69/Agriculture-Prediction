@@ -1,18 +1,25 @@
-import React, { useState } from 'react';
+import React, { useState } from "react";
+import "./App.css";
 
 function App() {
   // --- STATE MANAGEMENT ---
   const [formData, setFormData] = useState({
-    Nitrogen: 50, Phosphorus: 50, Potassium: 50,
-    Temperature: 26, Humidity: 80, pH: 6.5, Rainfall: 200,
-    Crop_Type: 'rice' // Default crop
+    Nitrogen: 50,
+    Phosphorus: 50,
+    Potassium: 50,
+    Temperature: 26,
+    Humidity: 80,
+    pH: 6.5,
+    Rainfall: 200,
+    Input_Cost: 0,
+    Crop_Type: "rice", // Default crop
   });
 
   const [result, setResult] = useState(null);
   const [loading, setLoading] = useState(false);
-  const [locationStatus, setLocationStatus] = useState(''); 
-  const [locationName, setLocationName] = useState(''); // Stores the city/state name
-  const [error, setError] = useState('');
+  const [locationStatus, setLocationStatus] = useState("");
+  const [locationName, setLocationName] = useState(""); // Stores the city/state name
+  const [error, setError] = useState("");
 
   // --- HANDLERS ---
 
@@ -38,24 +45,34 @@ function App() {
 
         try {
           // 1. Fetch Weather Data (Open-Meteo)
-          const weatherPromise = fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,relative_humidity_2m,rain&timezone=auto`);
-          
+          const weatherPromise = fetch(
+            `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,relative_humidity_2m,rain&timezone=auto`
+          );
+
           // 2. Fetch Location Name (BigDataCloud - Free Reverse Geocoding)
-          const locationPromise = fetch(`https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${lat}&longitude=${lon}&localityLanguage=en`);
+          const locationPromise = fetch(
+            `https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${lat}&longitude=${lon}&localityLanguage=en`
+          );
 
           // Execute both requests in parallel
-          const [weatherRes, locationRes] = await Promise.all([weatherPromise, locationPromise]);
+          const [weatherRes, locationRes] = await Promise.all([
+            weatherPromise,
+            locationPromise,
+          ]);
           const weatherData = await weatherRes.json();
           const locationData = await locationRes.json();
 
           // Update Form with Weather
           if (weatherData.current) {
-            setFormData(prev => ({
+            setFormData((prev) => ({
               ...prev,
               Temperature: weatherData.current.temperature_2m,
               Humidity: weatherData.current.relative_humidity_2m,
               // Only update rain if it's actually raining, otherwise keep manual/default
-              Rainfall: weatherData.current.rain > 0 ? weatherData.current.rain : prev.Rainfall 
+              Rainfall:
+                weatherData.current.rain > 0
+                  ? weatherData.current.rain
+                  : prev.Rainfall,
             }));
           }
 
@@ -64,23 +81,26 @@ function App() {
           const city = locationData.locality || locationData.city || "";
           const state = locationData.principalSubdivision || "";
           const country = locationData.countryName || "";
-          
-          // Format: "Ghaziabad, Uttar Pradesh, India"
-          const formattedLocation = [city, state, country].filter(Boolean).join(', ');
-          setLocationName(formattedLocation);
-          
-          setLocationStatus("✅ Data updated successfully!");
 
+          // Format: "Ghaziabad, Uttar Pradesh, India"
+          const formattedLocation = [city, state, country]
+            .filter(Boolean)
+            .join(", ");
+          setLocationName(formattedLocation);
+
+          setLocationStatus("✅ Data updated successfully!");
         } catch (error) {
           console.error("Fetch failed:", error);
           setLocationStatus("Failed to fetch data.");
         }
-        
+
         // Hide status message after 3 seconds
-        setTimeout(() => setLocationStatus(''), 3000);
+        setTimeout(() => setLocationStatus(""), 3000);
       },
       (error) => {
-        setLocationStatus("Unable to retrieve location. Please allow permissions.");
+        setLocationStatus(
+          "Unable to retrieve location. Please allow permissions."
+        );
       }
     );
   };
@@ -88,7 +108,7 @@ function App() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
-    setError('');
+    setError("");
     setResult(null);
 
     try {
@@ -101,22 +121,39 @@ function App() {
         Humidity: parseFloat(formData.Humidity),
         pH: parseFloat(formData.pH),
         Rainfall: parseFloat(formData.Rainfall),
+        Input_Cost: parseFloat(formData.Input_Cost) || 0,
       };
 
-      const response = await fetch('http://127.0.0.1:5000/predict', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      const response = await fetch("http://127.0.0.1:5000/predict", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
 
       const data = await response.json();
-      if (data.status === 'success') {
-        setResult(data.prediction);
+      if (data.status === "success") {
+        const serverResult = data.prediction || {};
+        const userCost = parseFloat(formData.Input_Cost) || 0;
+
+        if (userCost > 0) {
+          const yieldTon = parseFloat(serverResult.yield_ton_hectare) || 0;
+          const marketPrice = parseFloat(serverResult.market_price_used) || 0;
+          const revenue = Math.round(yieldTon * marketPrice * 100) / 100;
+          const modified = {
+            ...serverResult,
+            cost: userCost,
+            revenue: revenue,
+            net_profit: Math.round((revenue - userCost) * 100) / 100,
+          };
+          setResult(modified);
+        } else {
+          setResult(serverResult);
+        }
       } else {
-        setError('Error processing data.');
+        setError("Error processing data.");
       }
     } catch (err) {
-      setError('Failed to connect to server. Is Flask running?');
+      setError("Failed to connect to server. Is Flask running?");
     }
     setLoading(false);
   };
@@ -128,15 +165,19 @@ function App() {
       </header>
 
       <div className="main-content">
-        
         {/* --- LEFT PANEL: INPUT FORM --- */}
         <div className="card input-section">
           <h2>🌱 Soil Parameters</h2>
           <form onSubmit={handleSubmit}>
             <div className="grid-container">
-              
-              <label className="full-width">Crop to Plant
-                <select name="Crop_Type" value={formData.Crop_Type} onChange={handleChange} className="dropdown">
+              <label className="full-width">
+                Crop to Plant
+                <select
+                  name="Crop_Type"
+                  value={formData.Crop_Type}
+                  onChange={handleChange}
+                  className="dropdown"
+                >
                   <option value="rice">Rice</option>
                   <option value="maize">Maize</option>
                   <option value="chickpea">Chickpea</option>
@@ -164,13 +205,19 @@ function App() {
 
               {/* LOCATION BUTTON SECTION */}
               <div className="location-wrapper full-width">
-                <button type="button" className="location-btn" onClick={handleLocationClick}>
+                <button
+                  type="button"
+                  className="location-btn"
+                  onClick={handleLocationClick}
+                >
                   <span>📍</span> Auto-Detect Weather
                 </button>
-                
+
                 {/* Status Message (e.g., "Fetching...") */}
-                {locationStatus && <p className="status-msg">{locationStatus}</p>}
-                
+                {locationStatus && (
+                  <p className="status-msg">{locationStatus}</p>
+                )}
+
                 {/* Verified Location Name (e.g., "Ghaziabad, Uttar Pradesh") */}
                 {locationName && (
                   <div className="location-verified">
@@ -180,33 +227,95 @@ function App() {
                 )}
               </div>
 
-              <label>Nitrogen (N)
-                <input type="number" name="Nitrogen" value={formData.Nitrogen} onChange={handleChange} required />
+              <label>
+                Nitrogen (N)
+                <input
+                  type="number"
+                  name="Nitrogen"
+                  value={formData.Nitrogen}
+                  onChange={handleChange}
+                  required
+                />
               </label>
-              <label>Phosphorus (P)
-                <input type="number" name="Phosphorus" value={formData.Phosphorus} onChange={handleChange} required />
+              <label>
+                Phosphorus (P)
+                <input
+                  type="number"
+                  name="Phosphorus"
+                  value={formData.Phosphorus}
+                  onChange={handleChange}
+                  required
+                />
               </label>
-              <label>Potassium (K)
-                <input type="number" name="Potassium" value={formData.Potassium} onChange={handleChange} required />
+              <label>
+                Potassium (K)
+                <input
+                  type="number"
+                  name="Potassium"
+                  value={formData.Potassium}
+                  onChange={handleChange}
+                  required
+                />
               </label>
-              
-              <label>Temperature (°C)
-                <input type="number" name="Temperature" value={formData.Temperature} onChange={handleChange} required />
+
+              <label>
+                Temperature (°C)
+                <input
+                  type="number"
+                  name="Temperature"
+                  value={formData.Temperature}
+                  onChange={handleChange}
+                  required
+                />
               </label>
-              <label>Humidity (%)
-                <input type="number" name="Humidity" value={formData.Humidity} onChange={handleChange} required />
+              <label>
+                Humidity (%)
+                <input
+                  type="number"
+                  name="Humidity"
+                  value={formData.Humidity}
+                  onChange={handleChange}
+                  required
+                />
               </label>
-              <label>Rainfall (mm)
-                <input type="number" name="Rainfall" value={formData.Rainfall} onChange={handleChange} required />
+              <label>
+                Rainfall (mm)
+                <input
+                  type="number"
+                  name="Rainfall"
+                  value={formData.Rainfall}
+                  onChange={handleChange}
+                  required
+                />
               </label>
-              
-              <label>pH Level
-                <input type="number" step="0.1" name="pH" value={formData.pH} onChange={handleChange} required />
+
+              <label>
+                Input Cost (₹)
+                <input
+                  type="number"
+                  step="0.01"
+                  name="Input_Cost"
+                  value={formData.Input_Cost}
+                  onChange={handleChange}
+                  placeholder="Enter your total input cost"
+                />
+              </label>
+
+              <label>
+                pH Level
+                <input
+                  type="number"
+                  step="0.1"
+                  name="pH"
+                  value={formData.pH}
+                  onChange={handleChange}
+                  required
+                />
               </label>
             </div>
 
             <button type="submit" className="analyze-btn" disabled={loading}>
-              {loading ? 'Analyzing Soil...' : 'Predict Yield & Profit'}
+              {loading ? "Analyzing Soil..." : "Predict Yield & Profit"}
             </button>
           </form>
           {error && <p className="error-msg">{error}</p>}
@@ -217,21 +326,29 @@ function App() {
           {!result ? (
             <div className="placeholder">
               <h3>Ready to Analyze</h3>
-              <p>Select a crop and enter soil details to generate an AI-driven cost-benefit report.</p>
+              <p>
+                Select a crop and enter soil details to generate an AI-driven
+                cost-benefit report.
+              </p>
             </div>
           ) : (
             <div className="report fade-in">
               <h2>📊 Analysis Report</h2>
-              
+
               <div className="highlight-box">
                 <span className="label">Predicted Yield</span>
-                <span className="value">{result.yield_ton_hectare} <small>Tons/Ha</small></span>
+                <span className="value">
+                  {result.yield_ton_hectare} <small>Tons/Ha</small>
+                </span>
               </div>
 
               <div className="financial-breakdown">
                 <div className="money-item">
                   <span>Market Rate (Live)</span>
-                  <strong>₹{result.market_price_used.toLocaleString()} <small>/ton</small></strong>
+                  <strong>
+                    ₹{result.market_price_used.toLocaleString()}{" "}
+                    <small>/ton</small>
+                  </strong>
                 </div>
                 <div className="money-item revenue">
                   <span>Est. Revenue</span>
@@ -243,15 +360,22 @@ function App() {
                 </div>
               </div>
 
-              <div className={`profit-box ${result.net_profit > 0 ? 'profit' : 'loss'}`}>
+              <div
+                className={`profit-box ${
+                  result.net_profit > 0 ? "profit" : "loss"
+                }`}
+              >
                 <span>NET PROFIT PROJECTION</span>
                 <h1>₹{result.net_profit.toLocaleString()}</h1>
-                <p>{result.net_profit > 0 ? "✅ Sustainable Farming" : "⚠️ High Risk Warning"}</p>
+                <p>
+                  {result.net_profit > 0
+                    ? "✅ Sustainable Farming"
+                    : "⚠️ High Risk Warning"}
+                </p>
               </div>
             </div>
           )}
         </div>
-
       </div>
     </div>
   );
