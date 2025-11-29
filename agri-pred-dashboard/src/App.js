@@ -1,8 +1,7 @@
 import React, { useState } from 'react';
-import './App.css';
 
 function App() {
-  // State for form inputs
+  // --- STATE MANAGEMENT ---
   const [formData, setFormData] = useState({
     Nitrogen: 50, Phosphorus: 50, Potassium: 50,
     Temperature: 26, Humidity: 80, pH: 6.5, Rainfall: 200,
@@ -11,14 +10,81 @@ function App() {
 
   const [result, setResult] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [locationStatus, setLocationStatus] = useState(''); 
+  const [locationName, setLocationName] = useState(''); // Stores the city/state name
   const [error, setError] = useState('');
 
-  // Handle input changes
+  // --- HANDLERS ---
+
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  // Submit to Flask API
+  // Logic to get GPS + Weather + Location Name
+  const handleLocationClick = () => {
+    if (!navigator.geolocation) {
+      setLocationStatus("Geolocation is not supported by your browser.");
+      return;
+    }
+
+    setLocationStatus("Locating...");
+    setLocationName(""); // Reset previous location name
+
+    navigator.geolocation.getCurrentPosition(
+      async (position) => {
+        const lat = position.coords.latitude;
+        const lon = position.coords.longitude;
+        setLocationStatus("Fetching weather & location details...");
+
+        try {
+          // 1. Fetch Weather Data (Open-Meteo)
+          const weatherPromise = fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,relative_humidity_2m,rain&timezone=auto`);
+          
+          // 2. Fetch Location Name (BigDataCloud - Free Reverse Geocoding)
+          const locationPromise = fetch(`https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${lat}&longitude=${lon}&localityLanguage=en`);
+
+          // Execute both requests in parallel
+          const [weatherRes, locationRes] = await Promise.all([weatherPromise, locationPromise]);
+          const weatherData = await weatherRes.json();
+          const locationData = await locationRes.json();
+
+          // Update Form with Weather
+          if (weatherData.current) {
+            setFormData(prev => ({
+              ...prev,
+              Temperature: weatherData.current.temperature_2m,
+              Humidity: weatherData.current.relative_humidity_2m,
+              // Only update rain if it's actually raining, otherwise keep manual/default
+              Rainfall: weatherData.current.rain > 0 ? weatherData.current.rain : prev.Rainfall 
+            }));
+          }
+
+          // Update Location Name
+          // API returns fields like: locality, city, principalSubdivision, countryName
+          const city = locationData.locality || locationData.city || "";
+          const state = locationData.principalSubdivision || "";
+          const country = locationData.countryName || "";
+          
+          // Format: "Ghaziabad, Uttar Pradesh, India"
+          const formattedLocation = [city, state, country].filter(Boolean).join(', ');
+          setLocationName(formattedLocation);
+          
+          setLocationStatus("✅ Data updated successfully!");
+
+        } catch (error) {
+          console.error("Fetch failed:", error);
+          setLocationStatus("Failed to fetch data.");
+        }
+        
+        // Hide status message after 3 seconds
+        setTimeout(() => setLocationStatus(''), 3000);
+      },
+      (error) => {
+        setLocationStatus("Unable to retrieve location. Please allow permissions.");
+      }
+    );
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
@@ -26,7 +92,6 @@ function App() {
     setResult(null);
 
     try {
-      // Ensure numeric values are sent as numbers, not strings
       const payload = {
         ...formData,
         Nitrogen: parseFloat(formData.Nitrogen),
@@ -70,7 +135,6 @@ function App() {
           <form onSubmit={handleSubmit}>
             <div className="grid-container">
               
-              {/* CROP SELECTION DROPDOWN */}
               <label className="full-width">Crop to Plant
                 <select name="Crop_Type" value={formData.Crop_Type} onChange={handleChange} className="dropdown">
                   <option value="rice">Rice</option>
@@ -98,6 +162,24 @@ function App() {
                 </select>
               </label>
 
+              {/* LOCATION BUTTON SECTION */}
+              <div className="location-wrapper full-width">
+                <button type="button" className="location-btn" onClick={handleLocationClick}>
+                  <span>📍</span> Auto-Detect Weather
+                </button>
+                
+                {/* Status Message (e.g., "Fetching...") */}
+                {locationStatus && <p className="status-msg">{locationStatus}</p>}
+                
+                {/* Verified Location Name (e.g., "Ghaziabad, Uttar Pradesh") */}
+                {locationName && (
+                  <div className="location-verified">
+                    <small>Verified Location:</small>
+                    <strong>{locationName}</strong>
+                  </div>
+                )}
+              </div>
+
               <label>Nitrogen (N)
                 <input type="number" name="Nitrogen" value={formData.Nitrogen} onChange={handleChange} required />
               </label>
@@ -107,17 +189,19 @@ function App() {
               <label>Potassium (K)
                 <input type="number" name="Potassium" value={formData.Potassium} onChange={handleChange} required />
               </label>
+              
               <label>Temperature (°C)
                 <input type="number" name="Temperature" value={formData.Temperature} onChange={handleChange} required />
               </label>
               <label>Humidity (%)
                 <input type="number" name="Humidity" value={formData.Humidity} onChange={handleChange} required />
               </label>
-              <label>pH Level
-                <input type="number" step="0.1" name="pH" value={formData.pH} onChange={handleChange} required />
-              </label>
               <label>Rainfall (mm)
                 <input type="number" name="Rainfall" value={formData.Rainfall} onChange={handleChange} required />
+              </label>
+              
+              <label>pH Level
+                <input type="number" step="0.1" name="pH" value={formData.pH} onChange={handleChange} required />
               </label>
             </div>
 
@@ -145,7 +229,6 @@ function App() {
               </div>
 
               <div className="financial-breakdown">
-                {/* MARKET RATE MOVED HERE - SAFE FROM CRASHING */}
                 <div className="money-item">
                   <span>Market Rate (Live)</span>
                   <strong>₹{result.market_price_used.toLocaleString()} <small>/ton</small></strong>
