@@ -5,7 +5,8 @@ function App() {
   // State for form inputs
   const [formData, setFormData] = useState({
     Nitrogen: 50, Phosphorus: 50, Potassium: 50,
-    Temperature: 26, Humidity: 80, pH: 6.5, Rainfall: 200
+    Temperature: 26, Humidity: 80, pH: 6.5, Rainfall: 200,
+    Crop_Type: 'rice' // Default crop
   });
 
   const [result, setResult] = useState(null);
@@ -14,7 +15,7 @@ function App() {
 
   // Handle input changes
   const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: parseFloat(e.target.value) });
+    setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
   // Submit to Flask API
@@ -25,10 +26,22 @@ function App() {
     setResult(null);
 
     try {
+      // Ensure numeric values are sent as numbers, not strings
+      const payload = {
+        ...formData,
+        Nitrogen: parseFloat(formData.Nitrogen),
+        Phosphorus: parseFloat(formData.Phosphorus),
+        Potassium: parseFloat(formData.Potassium),
+        Temperature: parseFloat(formData.Temperature),
+        Humidity: parseFloat(formData.Humidity),
+        pH: parseFloat(formData.pH),
+        Rainfall: parseFloat(formData.Rainfall),
+      };
+
       const response = await fetch('http://127.0.0.1:5000/predict', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData),
+        body: JSON.stringify(payload),
       });
 
       const data = await response.json();
@@ -56,6 +69,35 @@ function App() {
           <h2>🌱 Soil Parameters</h2>
           <form onSubmit={handleSubmit}>
             <div className="grid-container">
+              
+              {/* CROP SELECTION DROPDOWN */}
+              <label className="full-width">Crop to Plant
+                <select name="Crop_Type" value={formData.Crop_Type} onChange={handleChange} className="dropdown">
+                  <option value="rice">Rice</option>
+                  <option value="maize">Maize</option>
+                  <option value="chickpea">Chickpea</option>
+                  <option value="kidneybeans">Kidney Beans</option>
+                  <option value="pigeonpeas">Pigeon Peas</option>
+                  <option value="mothbeans">Moth Beans</option>
+                  <option value="mungbean">Mung Bean</option>
+                  <option value="blackgram">Black Gram</option>
+                  <option value="lentil">Lentil</option>
+                  <option value="pomegranate">Pomegranate</option>
+                  <option value="banana">Banana</option>
+                  <option value="mango">Mango</option>
+                  <option value="grapes">Grapes</option>
+                  <option value="watermelon">Watermelon</option>
+                  <option value="muskmelon">Muskmelon</option>
+                  <option value="apple">Apple</option>
+                  <option value="orange">Orange</option>
+                  <option value="papaya">Papaya</option>
+                  <option value="coconut">Coconut</option>
+                  <option value="cotton">Cotton</option>
+                  <option value="jute">Jute</option>
+                  <option value="coffee">Coffee</option>
+                </select>
+              </label>
+
               <label>Nitrogen (N)
                 <input type="number" name="Nitrogen" value={formData.Nitrogen} onChange={handleChange} required />
               </label>
@@ -78,6 +120,7 @@ function App() {
                 <input type="number" name="Rainfall" value={formData.Rainfall} onChange={handleChange} required />
               </label>
             </div>
+
             <button type="submit" className="analyze-btn" disabled={loading}>
               {loading ? 'Analyzing Soil...' : 'Predict Yield & Profit'}
             </button>
@@ -90,7 +133,7 @@ function App() {
           {!result ? (
             <div className="placeholder">
               <h3>Ready to Analyze</h3>
-              <p>Enter soil details to generate an AI-driven cost-benefit report.</p>
+              <p>Select a crop and enter soil details to generate an AI-driven cost-benefit report.</p>
             </div>
           ) : (
             <div className="report fade-in">
@@ -102,6 +145,11 @@ function App() {
               </div>
 
               <div className="financial-breakdown">
+                {/* MARKET RATE MOVED HERE - SAFE FROM CRASHING */}
+                <div className="money-item">
+                  <span>Market Rate (Live)</span>
+                  <strong>₹{result.market_price_used.toLocaleString()} <small>/ton</small></strong>
+                </div>
                 <div className="money-item revenue">
                   <span>Est. Revenue</span>
                   <strong>₹{result.revenue.toLocaleString()}</strong>

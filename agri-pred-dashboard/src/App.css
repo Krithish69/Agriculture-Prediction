@@ -1,38 +1,199 @@
-.App {
-  text-align: center;
+/* General Layout */
+body {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  background-color: #f0f4f1;
+  margin: 0;
 }
 
-.App-logo {
-  height: 40vmin;
-  pointer-events: none;
-}
-
-@media (prefers-reduced-motion: no-preference) {
-  .App-logo {
-    animation: App-logo-spin infinite 20s linear;
-  }
-}
-
-.App-header {
-  background-color: #282c34;
-  min-height: 100vh;
+.app-container {
   display: flex;
   flex-direction: column;
   align-items: center;
+  min-height: 100vh;
+  width: 100%;
+}
+
+.navbar {
+  background: #2e7d32; /* Agri Green */
+  color: white;
+  width: 100%;
+  padding: 1rem;
+  text-align: center;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+}
+
+.main-content {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2rem;
+  padding: 2rem;
+  width: 100%;
+  max-width: 1200px;
   justify-content: center;
-  font-size: calc(10px + 2vmin);
+}
+
+/* Cards */
+.card {
+  background: white;
+  padding: 2rem;
+  border-radius: 12px;
+  box-shadow: 0 8px 20px rgba(0,0,0,0.05);
+  flex: 1;
+  min-width: 350px;
+}
+
+.input-section h2, .result-section h2 {
+  margin-top: 0;
+  color: #2e7d32;
+}
+
+/* Form Grid */
+.grid-container {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 15px;
+}
+
+label {
+  display: flex;
+  flex-direction: column;
+  font-weight: 600;
+  color: #555;
+  font-size: 0.9rem;
+}
+
+label.full-width {
+  grid-column: 1 / -1;
+}
+
+input, select {
+  padding: 10px;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  margin-top: 5px;
+  font-size: 1rem;
+}
+
+select.dropdown {
+  background-color: white;
+}
+
+/* Button */
+.analyze-btn {
+  background: #2e7d32;
+  color: white;
+  border: none;
+  padding: 15px;
+  width: 100%;
+  margin-top: 20px;
+  font-size: 1.1rem;
+  font-weight: bold;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.3s;
+}
+
+.analyze-btn:hover {
+  background: #1b5e20;
+}
+
+.analyze-btn:disabled {
+  background: #ccc;
+  cursor: not-allowed;
+}
+
+.error-msg {
+  color: red;
+  margin-top: 10px;
+  font-weight: bold;
+}
+
+/* Results Styling */
+.placeholder {
+  text-align: center;
+  color: #777;
+  margin-top: 20px;
+}
+
+.highlight-box {
+  background: #e8f5e9;
+  padding: 15px;
+  border-radius: 8px;
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+.highlight-box .value {
+  display: block;
+  font-size: 2rem;
+  font-weight: bold;
+  color: #2e7d32;
+}
+
+.highlight-box .label {
+  font-weight: 600;
+  color: #555;
+}
+
+.financial-breakdown {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.money-item {
+  text-align: center;
+  background: #fafafa;
+  padding: 10px;
+  border-radius: 8px;
+  flex: 1;
+}
+
+.money-item span {
+  display: block;
+  font-size: 0.8rem;
+  color: #777;
+  margin-bottom: 5px;
+}
+
+.money-item strong {
+  font-size: 1.1rem;
+  color: #333;
+}
+
+/* Profit Box Logic */
+.profit-box {
+  text-align: center;
+  padding: 20px;
+  border-radius: 10px;
   color: white;
 }
 
-.App-link {
-  color: #61dafb;
+.profit-box.profit {
+  background: linear-gradient(135deg, #43a047, #2e7d32);
 }
 
-@keyframes App-logo-spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
+.profit-box.loss {
+  background: linear-gradient(135deg, #e53935, #c62828);
+}
+
+.profit-box h1 {
+  margin: 10px 0;
+  font-size: 2.5rem;
+}
+
+.profit-box p {
+  margin: 0;
+  font-weight: 500;
+}
+
+/* Animation */
+.fade-in {
+  animation: fadeIn 0.5s ease-in;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
 }
