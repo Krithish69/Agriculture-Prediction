@@ -2,7 +2,6 @@ import React, { useState } from "react";
 import "./App.css";
 
 function App() {
-  // --- STATE MANAGEMENT ---
   const [formData, setFormData] = useState({
     Nitrogen: 50,
     Phosphorus: 50,
@@ -12,22 +11,20 @@ function App() {
     pH: 6.5,
     Rainfall: 200,
     Input_Cost: 0,
-    Crop_Type: "rice", // Default crop
+    Crop_Type: "rice", 
   });
 
   const [result, setResult] = useState(null);
   const [loading, setLoading] = useState(false);
   const [locationStatus, setLocationStatus] = useState("");
-  const [locationName, setLocationName] = useState(""); // Stores the city/state name
+  const [locationName, setLocationName] = useState(""); 
   const [error, setError] = useState("");
 
-  // --- HANDLERS ---
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  // Logic to get GPS + Weather + Location Name
   const handleLocationClick = () => {
     if (!navigator.geolocation) {
       setLocationStatus("Geolocation is not supported by your browser.");
@@ -35,7 +32,7 @@ function App() {
     }
 
     setLocationStatus("Locating...");
-    setLocationName(""); // Reset previous location name
+    setLocationName(""); 
 
     navigator.geolocation.getCurrentPosition(
       async (position) => {
@@ -44,17 +41,13 @@ function App() {
         setLocationStatus("Fetching weather & location details...");
 
         try {
-          // 1. Fetch Weather Data (Open-Meteo)
           const weatherPromise = fetch(
             `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,relative_humidity_2m,rain&timezone=auto`
           );
 
-          // 2. Fetch Location Name (BigDataCloud - Free Reverse Geocoding)
           const locationPromise = fetch(
             `https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${lat}&longitude=${lon}&localityLanguage=en`
           );
-
-          // Execute both requests in parallel
           const [weatherRes, locationRes] = await Promise.all([
             weatherPromise,
             locationPromise,
@@ -62,13 +55,11 @@ function App() {
           const weatherData = await weatherRes.json();
           const locationData = await locationRes.json();
 
-          // Update Form with Weather
           if (weatherData.current) {
             setFormData((prev) => ({
               ...prev,
               Temperature: weatherData.current.temperature_2m,
               Humidity: weatherData.current.relative_humidity_2m,
-              // Only update rain if it's actually raining, otherwise keep manual/default
               Rainfall:
                 weatherData.current.rain > 0
                   ? weatherData.current.rain
@@ -76,13 +67,10 @@ function App() {
             }));
           }
 
-          // Update Location Name
-          // API returns fields like: locality, city, principalSubdivision, countryName
           const city = locationData.locality || locationData.city || "";
           const state = locationData.principalSubdivision || "";
           const country = locationData.countryName || "";
 
-          // Format: "Ghaziabad, Uttar Pradesh, India"
           const formattedLocation = [city, state, country]
             .filter(Boolean)
             .join(", ");
@@ -94,7 +82,6 @@ function App() {
           setLocationStatus("Failed to fetch data.");
         }
 
-        // Hide status message after 3 seconds
         setTimeout(() => setLocationStatus(""), 3000);
       },
       (error) => {
@@ -165,7 +152,6 @@ function App() {
       </header>
 
       <div className="main-content">
-        {/* --- LEFT PANEL: INPUT FORM --- */}
         <div className="card input-section">
           <h2>🌱 Soil Parameters</h2>
           <form onSubmit={handleSubmit}>
@@ -203,7 +189,6 @@ function App() {
                 </select>
               </label>
 
-              {/* LOCATION BUTTON SECTION */}
               <div className="location-wrapper full-width">
                 <button
                   type="button"
@@ -213,12 +198,10 @@ function App() {
                   <span>📍</span> Auto-Detect Weather
                 </button>
 
-                {/* Status Message (e.g., "Fetching...") */}
                 {locationStatus && (
                   <p className="status-msg">{locationStatus}</p>
                 )}
 
-                {/* Verified Location Name (e.g., "Ghaziabad, Uttar Pradesh") */}
                 {locationName && (
                   <div className="location-verified">
                     <small>Verified Location:</small>
@@ -320,8 +303,7 @@ function App() {
           </form>
           {error && <p className="error-msg">{error}</p>}
         </div>
-
-        {/* --- RIGHT PANEL: RESULTS --- */}
+        
         <div className="card result-section">
           {!result ? (
             <div className="placeholder">
